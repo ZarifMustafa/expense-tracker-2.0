@@ -10,11 +10,13 @@ export default function ExpensesTable({
   expenses,
   onUpdateField,
   onExpenseNameClick,
+  onSortPriority,
+  prioritySortOrder,
 }) {
-  const [editingCell, setEditingCell] = useState(null); // {expenseNo, field}
+  const [editingCell, setEditingCell] = useState(null);
 
   const handleCellDoubleClick = (expenseNo, field) => {
-    if (field === "expenseName") return; // not editable inline here
+    if (field === "expenseName") return;
     setEditingCell({ expenseNo, field });
   };
 
@@ -32,7 +34,18 @@ export default function ExpensesTable({
         <tr>
           <th className="border px-4 py-2">Expense Name</th>
           <th className="border px-4 py-2">Estimated Cost</th>
-          <th className="border px-4 py-2">Priority</th>
+          <th className="border px-4 py-2">
+            <div className="flex items-center justify-center gap-1">
+              Priority
+              <button
+                onClick={onSortPriority}
+                className="text-gray-500 hover:text-black"
+                title="Sort by Priority"
+              >
+                {prioritySortOrder === "asc" ? "↑" : prioritySortOrder === "desc" ? "↓" : "⇅"}
+              </button>
+            </div>
+          </th>
           <th className="border px-4 py-2">Status</th>
         </tr>
       </thead>
@@ -47,6 +60,7 @@ export default function ExpensesTable({
             color,
           }) => (
             <tr key={expenseNo} className="hover:bg-gray-50 cursor-pointer">
+              {/* Expense Name */}
               <td className="border px-4 py-2 text-center">
                 <ColorBadge
                   color={color}
