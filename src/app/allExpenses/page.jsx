@@ -10,6 +10,7 @@ export default function AllExpensesPage() {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [addingExpense, setAddingExpense] = useState(false);
   const [prioritySortOrder, setPrioritySortOrder] = useState(null); // "asc" | "desc" | null
+  const [statusSortOrder, setStatusSortOrder] = useState(null); // "asc" | "desc" | null
 
   // Fetch expenses
   useEffect(() => {
@@ -88,19 +89,37 @@ export default function AllExpensesPage() {
     }
   };
 
-  // Sorting function
+  // Sorting by priority
   const sortByPriority = () => {
     const order = prioritySortOrder === "asc" ? "desc" : "asc";
     setPrioritySortOrder(order);
+    setStatusSortOrder(null); // reset other sort
 
     const priorityRank = { High: 3, Medium: 2, Low: 1 };
 
     setExpenses((prev) =>
-      [...prev].sort((a, b) => {
-        return order === "asc"
+      [...prev].sort((a, b) =>
+        order === "asc"
           ? priorityRank[a.priority] - priorityRank[b.priority]
-          : priorityRank[b.priority] - priorityRank[a.priority];
-      })
+          : priorityRank[b.priority] - priorityRank[a.priority]
+      )
+    );
+  };
+
+  // Sorting by status
+  const sortByStatus = () => {
+    const order = statusSortOrder === "asc" ? "desc" : "asc";
+    setStatusSortOrder(order);
+    setPrioritySortOrder(null); // reset other sort
+
+    const statusRank = { Pending: 1, "In Progress": 2, Completed: 3 };
+
+    setExpenses((prev) =>
+      [...prev].sort((a, b) =>
+        order === "asc"
+          ? statusRank[a.status] - statusRank[b.status]
+          : statusRank[b.status] - statusRank[a.status]
+      )
     );
   };
 
@@ -123,7 +142,9 @@ export default function AllExpensesPage() {
         onUpdateField={updateExpenseField}
         onExpenseNameClick={setSelectedExpense}
         onSortPriority={sortByPriority}
+        onSortStatus={sortByStatus}
         prioritySortOrder={prioritySortOrder}
+        statusSortOrder={statusSortOrder}
       />
 
       {selectedExpense && (

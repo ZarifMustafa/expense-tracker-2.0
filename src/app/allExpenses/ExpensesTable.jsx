@@ -11,7 +11,9 @@ export default function ExpensesTable({
   onUpdateField,
   onExpenseNameClick,
   onSortPriority,
+  onSortStatus,
   prioritySortOrder,
+  statusSortOrder,
 }) {
   const [editingCell, setEditingCell] = useState(null);
 
@@ -28,6 +30,12 @@ export default function ExpensesTable({
     setEditingCell(null);
   };
 
+  const renderSortIcon = (order) => {
+    if (order === "asc") return "↑";
+    if (order === "desc") return "↓";
+    return "⇅";
+  };
+
   return (
     <table className="min-w-full border border-gray-300 rounded-md">
       <thead className="bg-gray-100">
@@ -42,11 +50,22 @@ export default function ExpensesTable({
                 className="text-gray-500 hover:text-black"
                 title="Sort by Priority"
               >
-                {prioritySortOrder === "asc" ? "↑" : prioritySortOrder === "desc" ? "↓" : "⇅"}
+                {renderSortIcon(prioritySortOrder)}
               </button>
             </div>
           </th>
-          <th className="border px-4 py-2">Status</th>
+          <th className="border px-4 py-2">
+            <div className="flex items-center justify-center gap-1">
+              Status
+              <button
+                onClick={onSortStatus}
+                className="text-gray-500 hover:text-black"
+                title="Sort by Status"
+              >
+                {renderSortIcon(statusSortOrder)}
+              </button>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>
