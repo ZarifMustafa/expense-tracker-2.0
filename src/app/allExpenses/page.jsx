@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import ExpensesTable from "./ExpensesTable";
 import ExpenseModal from "./ExpenseModal";
-import AddExpenseModal from "./AddExpenseModal"; // new modal import
+import AddExpenseModal from "./AddExpenseModal";
 
 export default function AllExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [selectedExpense, setSelectedExpense] = useState(null);
-  const [addingExpense, setAddingExpense] = useState(false); // new state
+  const [addingExpense, setAddingExpense] = useState(false);
+  const [prioritySortOrder, setPrioritySortOrder] = useState(null); // "asc" | "desc" | null
 
   // Fetch expenses
   useEffect(() => {
@@ -46,7 +47,6 @@ export default function AllExpensesPage() {
         : prev
     );
 
-    // Persist update
     try {
       await fetch(`/api/expenses/${expenseNo}`, {
         method: "PATCH",
@@ -60,35 +60,49 @@ export default function AllExpensesPage() {
 
   // Add new expense
   const addExpense = async (newExpense) => {
-  try {
-    const res = await fetch("/api/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newExpense),
-    });
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newExpense),
+      });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("API error response:", errorText);
-      throw new Error(`Failed to add expense: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API error response:", errorText);
+        throw new Error(`Failed to add expense: ${res.status} ${res.statusText}`);
+      }
+
+      const createdExpense = await res.json();
+      setExpenses((prev) => [
+        ...prev,
+        {
+          ...createdExpense,
+          estimatedCost: Number(createdExpense.estimatedCost) || 0,
+        },
+      ]);
+      setAddingExpense(false);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to add expense");
     }
+  };
 
-    const createdExpense = await res.json();
+  // Sorting function
+  const sortByPriority = () => {
+    const order = prioritySortOrder === "asc" ? "desc" : "asc";
+    setPrioritySortOrder(order);
 
-    setExpenses((prev) => [
-      ...prev,
-      {
-        ...createdExpense,
-        estimatedCost: Number(createdExpense.estimatedCost) || 0,
-      },
-    ]);
-    setAddingExpense(false);
-  } catch (error) {
-    console.error(error);
-    alert("Failed to add expense");
-  }
-};
+    const priorityRank = { High: 3, Medium: 2, Low: 1 };
 
+    setExpenses((prev) =>
+      [...prev].sort((a, b) => {
+        return order === "asc"
+          ? priorityRank[a.priority] - priorityRank[b.priority]
+          : priorityRank[b.priority] - priorityRank[a.priority];
+      })
+    );
+  };
 
   const closeModal = () => setSelectedExpense(null);
 
@@ -99,7 +113,6 @@ export default function AllExpensesPage() {
         <button
           onClick={() => setAddingExpense(true)}
           className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2"
-          aria-label="Add Expense"
         >
           + Add Expense
         </button>
@@ -109,6 +122,8 @@ export default function AllExpensesPage() {
         expenses={expenses}
         onUpdateField={updateExpenseField}
         onExpenseNameClick={setSelectedExpense}
+        onSortPriority={sortByPriority}
+        prioritySortOrder={prioritySortOrder}
       />
 
       {selectedExpense && (
