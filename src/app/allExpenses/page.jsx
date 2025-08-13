@@ -1,16 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import ExpensesTable from "./ExpensesTable";
 import ExpenseModal from "./ExpenseModal";
 import AddExpenseModal from "./AddExpenseModal";
+import FilterPanel from "./FilterPanel";
 
 export default function AllExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [addingExpense, setAddingExpense] = useState(false);
-  const [prioritySortOrder, setPrioritySortOrder] = useState(null); // "asc" | "desc" | null
-  const [statusSortOrder, setStatusSortOrder] = useState(null); // "asc" | "desc" | null
+  const [prioritySortOrder, setPrioritySortOrder] = useState(null);
+  const [statusSortOrder, setStatusSortOrder] = useState(null);
+
+  // Filter states
+  const [priorityFilters, setPriorityFilters] = useState({
+    High: true,
+    Medium: true,
+    Low: true,
+  });
+  const [statusFilters, setStatusFilters] = useState({
+    Pending: true,
+    "In Progress": true,
+    Completed: false,
+  });
+
+  // Filtered expenses
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((expense) => {
+      return priorityFilters[expense.priority] && statusFilters[expense.status];
+    });
+  }, [expenses, priorityFilters, statusFilters]);
 
   // Fetch expenses
   useEffect(() => {
@@ -26,6 +46,22 @@ export default function AllExpensesPage() {
     fetchExpenses();
   }, []);
 
+  // Toggle priority filter
+  const togglePriorityFilter = (priority) => {
+    setPriorityFilters((prev) => ({
+      ...prev,
+      [priority]: !prev[priority],
+    }));
+  };
+
+  // Toggle status filter
+  const toggleStatusFilter = (status) => {
+    setStatusFilters((prev) => ({
+      ...prev,
+      [status]: !prev[status],
+    }));
+  };
+
   // Update expense (edit)
   const updateExpenseField = useCallback(async (expenseNo, field, value) => {
     setExpenses((prev) =>
@@ -33,7 +69,8 @@ export default function AllExpensesPage() {
         e.expenseNo === expenseNo
           ? {
               ...e,
-              [field]: field === "estimatedCost" ? parseFloat(value) || 0 : value,
+              [field]:
+                field === "estimatedCost" ? parseFloat(value) || 0 : value,
             }
           : e
       )
@@ -71,7 +108,9 @@ export default function AllExpensesPage() {
       if (!res.ok) {
         const errorText = await res.text();
         console.error("API error response:", errorText);
-        throw new Error(`Failed to add expense: ${res.status} ${res.statusText}`);
+        throw new Error(
+          `Failed to add expense: ${res.status} ${res.statusText}`
+        );
       }
 
       const createdExpense = await res.json();
@@ -129,16 +168,24 @@ export default function AllExpensesPage() {
     <>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">All Expenses</h1>
-        <button
-          onClick={() => setAddingExpense(true)}
-          className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2"
-        >
-          + Add Expense
-        </button>
+        <div className="flex items-center space-x-4">
+          <FilterPanel
+            priorityFilters={priorityFilters}
+            statusFilters={statusFilters}
+            togglePriorityFilter={togglePriorityFilter}
+            toggleStatusFilter={toggleStatusFilter}
+          />
+          <button
+            onClick={() => setAddingExpense(true)}
+            className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2"
+          >
+            + Add Expense
+          </button>
+        </div>
       </div>
 
       <ExpensesTable
-        expenses={expenses}
+        expenses={filteredExpenses}
         onUpdateField={updateExpenseField}
         onExpenseNameClick={setSelectedExpense}
         onSortPriority={sortByPriority}
